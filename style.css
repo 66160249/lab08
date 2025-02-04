@@ -51,6 +51,12 @@ body {
     margin-bottom: 15px;
 }
 
+.blog-tags {
+    font-size: 0.9em;
+    color: #007BFF;
+    margin-bottom: 10px;
+}
+
 .blog-actions {
     text-align: right;
     margin-top: 10px;
@@ -94,4 +100,8 @@ button {
 
 .hidden {
     display: none;
+}
+
+.filter-container {
+    margin-bottom: 20px;
 }
