@@ -29,14 +29,12 @@ class Blog {
 class BlogManager {
     constructor() {
         this.blogs = [];
-        this.tags = new Set(); // เก็บแท็กทั้งหมด
         this.loadBlogs();
     }
 
     addBlog(title, content, tags) {
         const blog = new Blog(Date.now(), title, content, tags);
         this.blogs.push(blog);
-        tags.forEach(tag => this.tags.add(tag)); // เพิ่มแท็กไปใน Set
         this.sortBlogs();
         this.saveBlogs();
         return blog;
@@ -46,7 +44,6 @@ class BlogManager {
         const blog = this.getBlog(id);
         if (blog) {
             blog.update(title, content, tags);
-            tags.forEach(tag => this.tags.add(tag)); // เพิ่มแท็กใหม่
             this.sortBlogs();
             this.saveBlogs();
         }
@@ -72,23 +69,11 @@ class BlogManager {
 
     saveBlogs() {
         localStorage.setItem("blogs", JSON.stringify(this.blogs));
-        localStorage.setItem("tags", JSON.stringify([...this.tags])); // บันทึกแท็กทั้งหมด
     }
 
     loadBlogs() {
         const storedBlogs = localStorage.getItem("blogs");
-        const storedTags = localStorage.getItem("tags");
-
-        if (storedBlogs) {
-            this.blogs = JSON.parse(storedBlogs).map((data) => 
-                new Blog(data.id, data.title, data.content, data.tags)
-            );
-        }
-
-        if (storedTags) {
-            this.tags = new Set(JSON.parse(storedTags)); // โหลดแท็กที่เคยใช้
-        }
-
+        this.blogs = storedBlogs ? JSON.parse(storedBlogs).map((data) => new Blog(data.id, data.title, data.content, data.tags)) : [];
         this.sortBlogs();
     }
 }
@@ -128,11 +113,11 @@ class BlogUI {
     handleSubmit() {
         const title = this.titleInput.value.trim();
         const content = this.contentInput.value.trim();
-        const tags = this.tagsInput.value.split(",").map(tag => tag.trim()).filter(tag => tag !== "");
-        const editId = parseInt(this.editIdInput.value) || null;
+        const tags = this.tagsInput.value.split(",").map(tag => tag.trim()).slice(0, 2); // จำกัดไม่เกิน 2 แท็ก
+        const editId = parseInt(this.editIdInput.value);
 
         if (title && content) {
-            if (editId !== null) {
+            if (editId) {
                 this.blogManager.updateBlog(editId, title, content, tags);
             } else {
                 this.blogManager.addBlog(title, content, tags);
@@ -173,29 +158,47 @@ class BlogUI {
 
     render() {
         this.blogList.innerHTML = this.blogManager.blogs
-            .map(blog => `
+            .map(
+                (blog) => `
                 <div class="blog-post">
                     <h2 class="blog-title">${blog.title}</h2>
                     <div class="blog-date">อัปเดตเมื่อ: ${blog.getFormattedDate()}</div>
-                    <div class="blog-content">${blog.content.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>")}</div>
+                    <div class="blog-content">${blog.content.replace(/\n/g, "<br>")}</div>
                     <div class="blog-tags">แท็ก: ${blog.tags.join(", ")}</div>
                     <div class="blog-actions">
                         <button class="btn-edit" onclick="blogUI.editBlog(${blog.id})">แก้ไข</button>
                         <button class="btn-delete" onclick="blogUI.deleteBlog(${blog.id})">ลบ</button>
                     </div>
                 </div>
-            `)
+            `
+            )
             .join("");
     }
 
     filterByTag() {
         const selectedTag = this.tagFilter.value;
         const filteredBlogs = selectedTag ? this.blogManager.filterBlogsByTag(selectedTag) : this.blogManager.blogs;
-        this.displayBlogs(filteredBlogs);
+
+        this.blogList.innerHTML = filteredBlogs
+            .map(
+                (blog) => `
+                <div class="blog-post">
+                    <h2 class="blog-title">${blog.title}</h2>
+                    <div class="blog-date">อัปเดตเมื่อ: ${blog.getFormattedDate()}</div>
+                    <div class="blog-content">${blog.content.replace(/\n/g, "<br>")}</div>
+                    <div class="blog-tags">แท็ก: ${blog.tags.join(", ")}</div>
+                    <div class="blog-actions">
+                        <button class="btn-edit" onclick="blogUI.editBlog(${blog.id})">แก้ไข</button>
+                        <button class="btn-delete" onclick="blogUI.deleteBlog(${blog.id})">ลบ</button>
+                    </div>
+                </div>
+            `
+            )
+            .join("");
     }
 
     updateTagFilter() {
-        const tags = [...this.blogManager.tags]; // ดึงแท็กจาก LocalStorage
+        const tags = [...new Set(this.blogManager.blogs.flatMap(blog => blog.tags))];
         this.tagFilter.innerHTML = '<option value="">-- เลือกแท็ก --</option>';
         tags.forEach(tag => {
             const option = document.createElement("option");
