@@ -29,12 +29,14 @@ class Blog {
 class BlogManager {
     constructor() {
         this.blogs = [];
+        this.tags = new Set(); // เก็บแท็กทั้งหมด
         this.loadBlogs();
     }
 
     addBlog(title, content, tags) {
         const blog = new Blog(Date.now(), title, content, tags);
         this.blogs.push(blog);
+        tags.forEach(tag => this.tags.add(tag)); // เพิ่มแท็กไปใน Set
         this.sortBlogs();
         this.saveBlogs();
         return blog;
@@ -44,6 +46,7 @@ class BlogManager {
         const blog = this.getBlog(id);
         if (blog) {
             blog.update(title, content, tags);
+            tags.forEach(tag => this.tags.add(tag)); // เพิ่มแท็กใหม่
             this.sortBlogs();
             this.saveBlogs();
         }
@@ -69,15 +72,23 @@ class BlogManager {
 
     saveBlogs() {
         localStorage.setItem("blogs", JSON.stringify(this.blogs));
+        localStorage.setItem("tags", JSON.stringify([...this.tags])); // บันทึกแท็กทั้งหมด
     }
 
     loadBlogs() {
         const storedBlogs = localStorage.getItem("blogs");
+        const storedTags = localStorage.getItem("tags");
+
         if (storedBlogs) {
             this.blogs = JSON.parse(storedBlogs).map((data) => 
                 new Blog(data.id, data.title, data.content, data.tags)
             );
         }
+
+        if (storedTags) {
+            this.tags = new Set(JSON.parse(storedTags)); // โหลดแท็กที่เคยใช้
+        }
+
         this.sortBlogs();
     }
 }
@@ -184,7 +195,7 @@ class BlogUI {
     }
 
     updateTagFilter() {
-        const tags = [...new Set(this.blogManager.blogs.flatMap(blog => blog.tags))];
+        const tags = [...this.blogManager.tags]; // ดึงแท็กจาก LocalStorage
         this.tagFilter.innerHTML = '<option value="">-- เลือกแท็ก --</option>';
         tags.forEach(tag => {
             const option = document.createElement("option");
