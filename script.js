@@ -73,7 +73,11 @@ class BlogManager {
 
     loadBlogs() {
         const storedBlogs = localStorage.getItem("blogs");
-        this.blogs = storedBlogs ? JSON.parse(storedBlogs).map((data) => new Blog(data.id, data.title, data.content, data.tags)) : [];
+        if (storedBlogs) {
+            this.blogs = JSON.parse(storedBlogs).map((data) => 
+                new Blog(data.id, data.title, data.content, data.tags)
+            );
+        }
         this.sortBlogs();
     }
 }
@@ -113,11 +117,11 @@ class BlogUI {
     handleSubmit() {
         const title = this.titleInput.value.trim();
         const content = this.contentInput.value.trim();
-        const tags = this.tagsInput.value.split(",").map(tag => tag.trim()); // อนุญาตให้เพิ่มแท็กได้ไม่จำกัด
-        const editId = parseInt(this.editIdInput.value);
+        const tags = this.tagsInput.value.split(",").map(tag => tag.trim()).filter(tag => tag !== "");
+        const editId = parseInt(this.editIdInput.value) || null;
 
         if (title && content) {
-            if (editId) {
+            if (editId !== null) {
                 this.blogManager.updateBlog(editId, title, content, tags);
             } else {
                 this.blogManager.addBlog(title, content, tags);
@@ -158,43 +162,25 @@ class BlogUI {
 
     render() {
         this.blogList.innerHTML = this.blogManager.blogs
-            .map(
-                (blog) => `
+            .map(blog => `
                 <div class="blog-post">
                     <h2 class="blog-title">${blog.title}</h2>
                     <div class="blog-date">อัปเดตเมื่อ: ${blog.getFormattedDate()}</div>
-                    <div class="blog-content">${blog.content.replace(/\n/g, "<br>")}</div>
+                    <div class="blog-content">${blog.content.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>")}</div>
                     <div class="blog-tags">แท็ก: ${blog.tags.join(", ")}</div>
                     <div class="blog-actions">
                         <button class="btn-edit" onclick="blogUI.editBlog(${blog.id})">แก้ไข</button>
                         <button class="btn-delete" onclick="blogUI.deleteBlog(${blog.id})">ลบ</button>
                     </div>
                 </div>
-            `
-            )
+            `)
             .join("");
     }
 
     filterByTag() {
         const selectedTag = this.tagFilter.value;
         const filteredBlogs = selectedTag ? this.blogManager.filterBlogsByTag(selectedTag) : this.blogManager.blogs;
-
-        this.blogList.innerHTML = filteredBlogs
-            .map(
-                (blog) => `
-                <div class="blog-post">
-                    <h2 class="blog-title">${blog.title}</h2>
-                    <div class="blog-date">อัปเดตเมื่อ: ${blog.getFormattedDate()}</div>
-                    <div class="blog-content">${blog.content.replace(/\n/g, "<br>")}</div>
-                    <div class="blog-tags">แท็ก: ${blog.tags.join(", ")}</div>
-                    <div class="blog-actions">
-                        <button class="btn-edit" onclick="blogUI.editBlog(${blog.id})">แก้ไข</button>
-                        <button class="btn-delete" onclick="blogUI.deleteBlog(${blog.id})">ลบ</button>
-                    </div>
-                </div>
-            `
-            )
-            .join("");
+        this.displayBlogs(filteredBlogs);
     }
 
     updateTagFilter() {
