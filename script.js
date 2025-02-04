@@ -113,7 +113,7 @@ class BlogUI {
     handleSubmit() {
         const title = this.titleInput.value.trim();
         const content = this.contentInput.value.trim();
-        const tags = this.tagsInput.value.split(",").map(tag => tag.trim()).slice(0, 2); // จำกัดไม่เกิน 2 แท็ก
+        const tags = this.tagsInput.value.split(",").map(tag => tag.trim()); // อนุญาตให้เพิ่มแท็กได้ไม่จำกัด
         const editId = parseInt(this.editIdInput.value);
 
         if (title && content) {
